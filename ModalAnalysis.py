@@ -17,6 +17,7 @@ class ModalAnalysis:
         self.m = np.zeros((self.Ne, self.Ndfe, self.Ndfe))
         self.massMatrices()
         self.stiffnessMatrices()
+        self.M=self.assembleMass()
 
     def findLengths(self, nodes, elements):
         lengths = np.zeros((self.Ne, 1))
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     elements = pd.read_excel(file_name, sheet_name='Sheet1').values[:, 1:]
     nodes = pd.read_excel(file_name, sheet_name='Sheet2').values[:, 1:]
     aa = ModalAnalysis(elements, nodes, dimension)
-    M = aa.assembleMass()
+    M = aa.M
     K = aa.assembleStiffness(np.ones(elements.shape[0]))
 
     w, v = aa.solve_eig(K, M)
