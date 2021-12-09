@@ -1,4 +1,4 @@
-import ModalAnalysis as MA
+import ModalAnalysis as ma
 import pandas as pd
 import numpy as np
 
@@ -19,7 +19,7 @@ if __name__=="__main__":
     dimension = int(file_name[0])
     elements = pd.read_excel(file_name, sheet_name='Sheet1').values[:, 1:]
     nodes = pd.read_excel(file_name, sheet_name='Sheet2').values[:, 1:]
-    aa = MA.ModalAnalysis(elements, nodes, dimension)
+    aa = ma.ModalAnalysis(elements, nodes, dimension)
 
     M = aa.assembleMass()
     K = aa.assembleStiffness(np.ones(elements.shape[0]))

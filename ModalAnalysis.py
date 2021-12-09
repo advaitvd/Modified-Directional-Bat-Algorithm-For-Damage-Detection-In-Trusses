@@ -5,6 +5,12 @@ from scipy import linalg as LA
 
 class ModalAnalysis:
     def __init__(self, elements, nodes, dimension):
+        '''
+        Parameters: 
+            elements - numpy nd-array with each row as an element with columns element number, node1, node2, Elastisity modulus, density, cross sectional area
+            nodes - numpy nd-array with each row as a node and columns as x, y, z coordinate respectively
+            dimension - 3d (3) or 2d (2)
+        '''
         self.elements = elements
         self.nodes = nodes
         self.Ndfe = dimension*2
@@ -20,6 +26,14 @@ class ModalAnalysis:
         self.M=self.assembleMass()
 
     def findLengths(self, nodes, elements):
+        '''
+        parameters:
+            nodes - numpy nd-array with each row as a node and columns as x, y, z coordinate respectively
+            elements - numpy nd-array with each row as an element with columns element number, node1, node2, Elastisity modulus, density, cross sectional area
+        Finds the lengths of each element in the elements matrix using the node coordinates.
+
+        returns: lengths numpy ndarray
+        '''
         lengths = np.zeros((self.Ne, 1))
         for i in range(self.Ne):
             lengths[i, 0] = np.linalg.norm(
@@ -28,6 +42,11 @@ class ModalAnalysis:
         return lengths
 
     def massMatrices(self):
+        '''
+        parameters: none
+        Finds the mass matrix for a typical linear element using the known formulas for 2d or 3d depending on the dimension of the problem.
+        returns: element mass matrix
+        '''
         if self.Ndfe/2 == 3:
             arr = np.array([2, 0, 0, 1, 0, 0,
                             0, 2, 0, 0, 1, 0,
@@ -48,6 +67,11 @@ class ModalAnalysis:
         return self.m
 
     def stiffnessMatrices(self):
+        '''
+        parameters: none
+        Finds the stiffness matrix for a typical linear element using the known formulas for 2d or 3d depending on the dimension of the problem.
+        returns: element stiffness matrix
+        '''
         if self.Ndfe/2 == 3.0:
             for i in range(self.Ne):
                 node1 = int(self.elements[i, 0])-1
@@ -87,6 +111,11 @@ class ModalAnalysis:
         return self.k
 
     def assembleStiffness(self, x):
+        '''
+        Assembles the stiffness matrix to generate the global stiffness matrix for the structure.
+        parameters:
+            x - damage parameters array where ith element corresponds to the damage parameter of the ith element. 0<=x[i]<=1
+        '''
         n = self.nodes.shape[0]
         Ndf = int(self.Ndfe/2)
         K = np.zeros((n*Ndf, n*Ndf))
@@ -106,6 +135,10 @@ class ModalAnalysis:
         return K
 
     def assembleMass(self):
+        '''
+        Assembles the mass matrix to generate the global mass matrix for the structure.
+        parameters: none
+        '''
         n = self.nodes.shape[0]
         Ndf = int(self.Ndfe/2)
         M = np.zeros((n*Ndf, n*Ndf))
@@ -121,6 +154,16 @@ class ModalAnalysis:
         return M
 
     def solve_eig(self, K, M):
+        '''
+        solves the eigen value problem (K-lambda*M)v = 0
+        parameters:
+            K - global stiffness matrix
+            M - global mass matrix
+        
+        returns: tuple (w, v)
+            w - eigen values
+            v - corresponding eigen vectors
+        '''
         w, v = LA.eig(np.matmul(np.linalg.inv(M), K))
         to_rm = []
         for i in range(w.shape[0]):
