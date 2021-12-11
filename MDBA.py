@@ -8,12 +8,9 @@ class MDBA:
         self.population_size=population_size
         self.cost_func = cost_func
 
-        self.options={
-                    'ub':Ub,
-                    'lb':Lb,
-                    'n_vars':n_vars,
-                    'population_size':population_size
-                    }
+        self.ub=Ub
+        self.lb=Lb
+        self.n_vars=n_vars
 
         self.population, self.fitness = self.initialize_population()
 
@@ -37,10 +34,10 @@ class MDBA:
         self.best_bat = 0
 
     def initialize_population(self):
-        population = np.empty(shape=(self.population_size,self.options['n_vars']),dtype=np.float)
+        population = np.empty(shape=(self.population_size,self.n_vars),dtype=np.float)
         fitness = np.empty(shape=(self.population_size,1),dtype=np.float)
 
-        population = self.options['lb']+(self.options['ub']-self.options['lb'])*np.random.random(size=(self.population_size,self.options['n_vars']))
+        population = self.lb+(self.ub-self.lb)*np.random.random(size=(self.population_size,self.n_vars))
         for i in range(self.population_size):
             fitness[i,0]=self.cost_func(population[i,:])
         
@@ -59,7 +56,6 @@ class MDBA:
 
         #iteration
         for step in range(1,self.num_iterations +1):
-            print(best_fit)
             for bat in range(self.population_size):
                 
                 #update bat variables
@@ -67,11 +63,11 @@ class MDBA:
 
                 #random walk
                 if np.random.random()<self.loudness[bat,:]:
-                    position+=self.loudness.mean()*np.random.uniform(-1,1,size=(self.options['n_vars'],))
+                    position+=self.loudness.mean()*np.random.uniform(-1,1,size=(self.n_vars,))
                 
                 #check limits
-                position[position>self.options['ub']]=self.options['ub']
-                position[position<self.options['lb']]=self.options['lb']
+                position[position>self.ub]=self.ub
+                position[position<self.lb]=self.lb
 
                 #check bat fitness
                 bat_fitness = self.cost_func(position)
@@ -90,7 +86,7 @@ class MDBA:
                         best_fit = bat_fitness
                         best_index = bat
 
-                        self.best_position = position.reshape(1,self.options['n_vars'])
+                        self.best_position = position.reshape(1,self.n_vars)
                         self.best_fitness = bat_fitness
                         self.best_bat = bat
         
@@ -115,10 +111,10 @@ if __name__=="__main__":
         return 20+np.e - 20*np.exp(-0.2*np.sqrt(np.sum(x*x)))-np.exp(np.sum(np.cos(2*np.pi*x)))
 
     
-    optimizer = MDBA(n_vars=2,population_size=100,num_iterations=100,cost_func=cost,Ub=100,Lb=-100)
+    optimizer = MDBA(n_vars=2,population_size=100,num_iterations=100,cost_func=cost,Ub=5,Lb=-5)
     
     optimizer.run()
 
-    print(optimizer.best_position)
+    print(optimizer.best_position, optimizer.best_fitness)
     # print(cost(np.zeros(shape=(2,2))[1,:]))
 
