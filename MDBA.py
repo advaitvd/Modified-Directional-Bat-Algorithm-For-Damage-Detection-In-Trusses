@@ -94,22 +94,8 @@ class MDBA:
 
 
 if __name__=="__main__":
-    # file_name = '2D-data.xlsx'
-    # dimension = int(file_name[0])
-    # elements = pd.read_excel(file_name, sheet_name='Sheet1').values[:, 1:]
-    # nodes = pd.read_excel(file_name, sheet_name='Sheet2').values[:, 1:]
-    # aa = ma.ModalAnalysis(elements, nodes, dimension)
-
-    # M = aa.assembleMass()
-    # K = aa.assembleStiffness(np.ones(elements.shape[0]))
-
-    # w, v = aa.solve_eig(K, M)
-    # print(w.shape, v.shape)
-    # print(w)
-
     def cost(x):
         return 20+np.e - 20*np.exp(-0.2*np.sqrt(np.sum(x*x)))-np.exp(np.sum(np.cos(2*np.pi*x)))
-
     
     optimizer = MDBA(n_vars=2,population_size=100,num_iterations=100,cost_func=cost,Ub=5,Lb=-5)
     

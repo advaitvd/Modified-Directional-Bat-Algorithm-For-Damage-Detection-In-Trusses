@@ -123,14 +123,10 @@ class ModalAnalysis:
         for i in range(self.Ne):
             n1 = int(self.elements[i, 0])-1
             n2 = int(self.elements[i, 1])-1
-            K[Ndf*n1:Ndf*(n1+1), Ndf*n1:Ndf*(n1+1)] += x[i] * \
-                self.k[i, :Ndf, :Ndf]
-            K[Ndf*n2:Ndf*(n2+1), Ndf*n2:Ndf*(n2+1)] += x[i] * \
-                self.k[i, Ndf:, Ndf:]
-            K[Ndf*n1:Ndf*(n1+1), Ndf*n2:Ndf*(n2+1)] += x[i] * \
-                self.k[i, :Ndf, Ndf:]
-            K[Ndf*n2:Ndf*(n2+1), Ndf*n1:Ndf*(n1+1)] += x[i] * \
-                self.k[i, Ndf:, :Ndf]
+            K[Ndf*n1:Ndf*(n1+1), Ndf*n1:Ndf*(n1+1)] += (1-x[i])*self.k[i, :Ndf, :Ndf]
+            K[Ndf*n2:Ndf*(n2+1), Ndf*n2:Ndf*(n2+1)] += (1-x[i])*self.k[i, Ndf:, Ndf:]
+            K[Ndf*n1:Ndf*(n1+1), Ndf*n2:Ndf*(n2+1)] += (1-x[i])*self.k[i, :Ndf, Ndf:]
+            K[Ndf*n2:Ndf*(n2+1), Ndf*n1:Ndf*(n1+1)] += (1-x[i])*self.k[i, Ndf:, :Ndf]
 
         return K
 
