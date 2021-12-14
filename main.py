@@ -50,11 +50,14 @@ def main():
     
     print(objective_function(x_exp))
 
-    optimizer = BatAlg(n_vars=len(elements),population_size=40,num_iterations=50,cost_func=objective_function,Ub=0.99,Lb=0,fmax=0.5)
+    optimizer = BatAlg(n_vars=len(elements),population_size=40,num_iterations=200,fmin=0,fmax=2, A0=0.9, A_inf=0.6,r0=0.1,r_inf=0.7,cost_func=objective_function,Ub=0.99,Lb=0)
     
     log=optimizer.run()
     plt.plot(log)
     print(optimizer.best_position, objective_function(optimizer.best_position[0]))
+    plt.xlabel('Iterations')
+    plt.ylabel('Objective function value')
+    plt.savefig('sample_run.png')
     plt.show()
 
 if __name__=='__main__':

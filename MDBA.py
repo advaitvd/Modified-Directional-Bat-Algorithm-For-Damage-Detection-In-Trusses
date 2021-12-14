@@ -45,20 +45,19 @@ class MDBA:
         
         return population, fitness
     
-    def update_bat(self, bat, best, random_bat, individual_optima,step):
-        # self.frequency[bat,:]=self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random()
-        # self.velocity[bat,:]=(self.population[best,:]-self.population[bat,:])*self.frequency[bat,:]
-        # position=self.population[bat,:]+self.velocity[bat,:]
+    def update_bat(self, bat, best, step):
+        f1 = self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random((self.n_vars,))
+        f2 = self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random((self.n_vars,))
 
-        f1 = self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random()
-        f2 = self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random()
-        f3 = self.frequency_range[0]+(self.frequency_range[1]-self.frequency_range[0])*np.random.random()
-
-        if bat!=random_bat and self.cost_func(individual_optima)<self.cost_func(self.population[bat,:]):
-            position=self.population[bat,:]+(self.population[best,:]-self.population[bat,:])*f1+(self.population[random_bat,:]-self.population[bat,:])*f2+(individual_optima-self.population[bat,:])*f3
+        k=np.random.randint(0,self.population_size)
+        while k==bat:
+            k=np.random.randint(0,self.population_size)
+        
+        position=None
+        if self.cost_func(self.population[k,:])<self.cost_func(self.population[bat,:]):
+            position = self.population[bat,:]+(self.population[best,:]-self.population[bat,:])*f1+(self.population[k,:]-self.population[bat,:])*f2
         else:
-            position=self.population[bat,:]+(self.population[best,:]-self.population[bat,:])*f1+(individual_optima-self.population[bat,:])*f3
-
+            position = self.population[bat,:]+(self.population[best,:]-self.population[bat,:])*f1
 
         return position
 
@@ -66,69 +65,72 @@ class MDBA:
         best_fit=self.fitness.min()
         best_index=self.fitness.argmin()
 
-        w_0=0.25*np.ones(self.population_size)
-        w_inf=0.01*np.ones(self.population_size)
+        w_0=0.25*(self.ub-self.lb)
+        w_inf=0.01*w_0
         log=np.zeros(shape=(self.num_iterations,))
         
         #iteration
-        for step in range(1,self.num_iterations +1):
-            print("{}: {}".format(step, best_fit))
+        step=1
+        while step <self.num_iterations+1:
+            flag=False
             for bat in range(self.population_size):
 
-                #random walk
-                w=(w_0[bat]-w_inf[bat])*(step-self.num_iterations)/(1-self.num_iterations)+w_inf[bat]
-                individual_optima=self.population[bat,:]+self.loudness.mean()*np.random.uniform(-1,1,size=self.n_vars)*w
-                
-                individual_optima[individual_optima>self.ub]=self.ub
-                individual_optima[individual_optima<self.lb]=self.lb
-
                 #update bat variables frequency, velocity, position
-                position = self.update_bat(bat,best_index,np.random.randint(0,self.population_size),individual_optima,step)
-                
-                #check limits
+                position = self.update_bat(bat,best_index,step)
                 position[position>self.ub]=self.ub
                 position[position<self.lb]=self.lb
+                
+                #random walk: Local search stratergy
+                if np.random.random()>self.pulse_rate[bat]:
+                    w=(w_0-w_inf)*(step-self.num_iterations)/(1-self.num_iterations)+w_inf
+                    position=position+self.loudness.mean()*np.random.uniform(-1,1,size=self.n_vars)*w
+                
+                    position[position>self.ub]=self.ub
+                    position[position<self.lb]=self.lb
+
 
                 #check bat fitness
                 bat_fitness = self.cost_func(position)
 
-                if bat_fitness < self.fitness[bat,:]:
+                if np.random.random()<self.loudness[bat] and bat_fitness < self.fitness[bat,:]:
                     self.fitness[bat,:]=bat_fitness
                     self.population[bat,:]=position
 
                     self.pulse_rate[bat,:]=(self.r0-self.r_inf)*(step-self.num_iterations)/(1-self.num_iterations)+self.r_inf
                     self.loudness[bat,0]=(self.A0-self.A_inf)*(step-self.num_iterations)/(1-self.num_iterations)+self.A_inf
                     
-                    if bat_fitness < best_fit:
-                        best_fit = bat_fitness
-                        best_index = bat
+                if bat_fitness < best_fit:
+                    flag=True
+                    best_fit = bat_fitness
 
-                        self.best_position = position.reshape(1,self.n_vars)
-                        self.best_fitness = bat_fitness
-                        self.best_bat = bat
+                    self.fitness[best_index,:]=bat_fitness
+                    self.population[best_index,:]=position
+
+                    self.best_position = position.reshape(1,self.n_vars)
+                    self.best_fitness = bat_fitness
             
             #elimination stratergy
             #eliminate poor performing individuals and randomly generate new solutions
-            if step%7==0:
-                num=int(0.1*self.population_size)
-                order=self.fitness.argsort(axis=0).reshape((self.population_size,))
+            # if step%7==0:
+            #     num=int(0.2*self.population_size)
+            #     order=self.fitness.argsort(axis=0).reshape((self.population_size,))
                 
-                self.population=self.population[order,:]
-                self.loudness=self.loudness[order]
-                self.pulse_rate=self.pulse_rate[order]
-                self.fitness=self.fitness[order]
+            #     self.population=self.population[order,:]
+            #     self.loudness=self.loudness[order]
+            #     self.pulse_rate=self.pulse_rate[order]
+            #     self.fitness=self.fitness[order]
                 
-                self.pulse_rate[-num:,:] = self.r0*np.ones(shape=(num,1),dtype=np.float32)
-                self.loudness[-num:,:] = self.A0*np.ones(shape=(num,1),dtype=np.float32)
-                
-                for i in range(1,num+1):
-                    self.population[-i,:self.n_vars//4]=self.population[np.random.randint(0,5),:self.n_vars//4]
-                    self.population[-i,self.n_vars//4:self.n_vars//2]=self.population[np.random.randint(0,5),self.n_vars//4:self.n_vars//2]
-                    self.population[-i,self.n_vars//2:3*self.n_vars//4]=self.population[np.random.randint(0,5),self.n_vars//2:3*self.n_vars//4]
-                    self.population[-i,3*self.n_vars//4:]=self.population[np.random.randint(0,5),3*self.n_vars//4:]
-                    self.fitness[-i,0]=self.cost_func(self.population[-i,:])
+            #     for i in range(1,num+1):
+            #         self.population[-i,:self.n_vars//4]=self.population[np.random.randint(0,5),:self.n_vars//4]
+            #         self.population[-i,self.n_vars//4:self.n_vars//2]=self.population[np.random.randint(0,5),self.n_vars//4:self.n_vars//2]
+            #         self.population[-i,self.n_vars//2:3*self.n_vars//4]=self.population[np.random.randint(0,5),self.n_vars//2:3*self.n_vars//4]
+            #         self.population[-i,3*self.n_vars//4:]=self.population[np.random.randint(0,5),3*self.n_vars//4:]
+            #         self.fitness[-i,0]=self.cost_func(self.population[-i,:])
             
-            log[step-1]=self.best_fitness
+            if flag:
+                print("{}: {}".format(step, best_fit))
+                log[step-1]=self.best_fitness
+                step+=1
         
         return log
 
